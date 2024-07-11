@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import cv2
 import mediapipe as mp
@@ -7,13 +7,10 @@ import base64
 from io import BytesIO
 from PIL import Image
 import uuid
-import requests
 import logging
 
 app = Flask(__name__)
 CORS(app)
-
-app.secret_key = 'supersecretkey'  # Needed for session management
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -42,12 +39,11 @@ def upload_jewelry(jewelry_type):
         return jsonify({"error": "Invalid jewelry type"}), 400
 
     data = request.json
-    image_url = data.get("image")
-    if not image_url:
-        return jsonify({"error": f"{jewelry_type.capitalize()} image URL not provided"}), 400
+    image_data = data.get("image")
+    if not image_data:
+        return jsonify({"error": f"{jewelry_type.capitalize()} image data not provided"}), 400
 
-    response = requests.get(image_url)
-    image = Image.open(BytesIO(response.content))
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
     jewelry_id = str(uuid.uuid4())
     temp_storage[jewelry_type] = {
         "id": jewelry_id,
@@ -90,6 +86,7 @@ def process_frame():
 
     return jsonify({"image": jpg_as_text})
 
+# Existing overlay functions remain the same
 def overlay_necklace(frame, necklace_img):
     offset_y = 30
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
